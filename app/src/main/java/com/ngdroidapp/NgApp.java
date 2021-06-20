@@ -6,6 +6,7 @@ import istanbul.gamelab.ngdroid.base.BaseActivity;
 import istanbul.gamelab.ngdroid.core.AppManager;
 import istanbul.gamelab.ngdroid.base.BaseApp;
 import istanbul.gamelab.ngdroid.core.NgMediaPlayer;
+import istanbul.gamelab.ngdroid.core.SoundManager;
 import istanbul.gamelab.ngdroid.util.Log;
 
 
@@ -16,11 +17,18 @@ import istanbul.gamelab.ngdroid.util.Log;
 
 public class NgApp extends BaseApp {
 
+    //ses etiketleri
+    int SES_BUTON = 0, SES_ATES = 1, SES_URET = 2, SES_PATLAMA = 3;
+
     boolean menuMuzikAcik;
     boolean oyunMuzikAcik;
+    boolean sesAcik;
 
     NgMediaPlayer menuMuzik;
     NgMediaPlayer oyunMuzik;
+
+    SoundManager sesCalar;
+    int sesListesi[];
 
     //gamecanvas ve menucanvastaki ses ve müzik butonlarının genel durumu
     int muzikButonDurumu, sesButonDurumu;
@@ -65,11 +73,24 @@ public class NgApp extends BaseApp {
      * can be retrieved using the getFrameRate() method.
      */
 
-
     public void setup() {
         appManager.setUnitResolution(AppManager.RESOLUTION_FULLHD);
         appManager.setScreenScaling(AppManager.SCREENSCALING_AUTO);
         appManager.setFrameRate(24);
+
+        sesAcik = true;
+
+        sesCalar = new SoundManager(this);
+        sesListesi = new int[4];
+        try {
+            sesListesi[0] = sesCalar.load("sounds/buton_ses.mp3");
+            sesListesi[1] = sesCalar.load("sounds/dusmanates.wav");
+            sesListesi[2] = sesCalar.load("sounds/gemidogmasesi.wav");
+            sesListesi[3] = sesCalar.load("sounds/patlama.mp3");
+        } catch(Exception ex) {
+            ex.printStackTrace();
+        }
+
 
         muzikButonDurumu = 0;
         sesButonDurumu = 0;
@@ -83,6 +104,12 @@ public class NgApp extends BaseApp {
 
         MenuCanvas mc = new MenuCanvas(this);
         canvasManager.setCurrentCanvas(mc);
+    }
+
+    public void sesCal(int id) {
+        if(sesAcik == true) {
+            sesCalar.play(sesListesi[id]);
+        }
     }
 
     public void oyunMuzikCal(boolean karar) {

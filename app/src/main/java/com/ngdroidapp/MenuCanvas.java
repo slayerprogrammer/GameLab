@@ -294,6 +294,7 @@ public class MenuCanvas extends BaseCanvas {
     private void oynaButonTikla(int x, int y) {
         if(x > oynaButonX && x < oynaButonX + oynaButonW &&
            y > oynaButonY && y < oynaButonY + oynaButonH) {
+            root.sesCal(root.SES_BUTON);
             root.menuMuzikCal(false);
             root.canvasManager.setCurrentCanvas(new GameCanvas(root));
         }
@@ -315,13 +316,20 @@ public class MenuCanvas extends BaseCanvas {
 
     private void sesButonTikla(int x, int y) {
         if(sesButonHedef.contains(x, y)) {
-            if(root.sesButonDurumu == 0) root.sesButonDurumu = 1;
-            else root.sesButonDurumu = 0;
+            root.sesCal(root.SES_BUTON);
+            if(root.sesButonDurumu == 0) {
+                root.sesButonDurumu = 1;
+                root.sesAcik = false;
+            } else {
+                root.sesButonDurumu = 0;
+                root.sesAcik = true;
+            }
         }
     }
 
     private void muzikButonTikla(int x, int y) {
         if(muzikButonHedef.contains(x, y)) {
+            root.sesCal(root.SES_BUTON);
             if(root.muzikButonDurumu == 0) {
                 root.muzikButonDurumu = 1;
                 root.menuMuzikAcik = false;
@@ -342,7 +350,7 @@ public class MenuCanvas extends BaseCanvas {
 
     private void ayarButonTikla(int x, int y) {
         if(ayarButonHedef.contains(x, y)) {
-            // buton sesi eklenecek
+            root.sesCal(root.SES_BUTON);
             // ayarButonMenusu
             ayarMenusuAcik = !ayarMenusuAcik;
             if(ayarMenusuAcik == true) {

@@ -32,10 +32,14 @@ public class GameCanvas extends BaseCanvas {
     int SOLTARAF = 0, SAGTARAF = 1;
     //oyuncu gemi parametreleri
     int OGEMI_TUR = 0, OGEMI_FRAME = 1, OGEMI_X = 2, OGEMI_Y = 3, OGEMI_W = 4, OGEMI_H = 5,
-            OGEMI_HIZ = 6, OGEMI_SM = 7, OGEMI_YOL = 8, OGEMI_RELOAD = 9, OGEMI_MERMI = 10;
+            OGEMI_HIZ = 6, OGEMI_SM = 7, OGEMI_YOL = 8, OGEMI_RELOAD = 9, OGEMI_MERMI = 10, OGEMI_DURUM = 11;
     //düşman gemi parametreleri
     int DGEMI_TUR = 0, DGEMI_FRAME = 1, DGEMI_X = 2, DGEMI_Y = 3, DGEMI_W = 4
-            , DGEMI_H = 5, DGEMI_HIZ = 6, DGEMI_SM = 7, DGEMI_YOL = 8, DGEMI_RELOAD = 9, DGEMI_MERMI = 10;
+            , DGEMI_H = 5, DGEMI_HIZ = 6, DGEMI_SM = 7, DGEMI_YOL = 8, DGEMI_RELOAD = 9, DGEMI_MERMI = 10, DGEMI_DURUM = 11;
+
+    //gemi durumları
+    int DURUM_NORMAL = 0, DURUM_ATES = 1;
+
     //Arkaplan
     Bitmap arkaPlan;
     int arkaPlanX, arkaPlanY;
@@ -43,10 +47,15 @@ public class GameCanvas extends BaseCanvas {
     Bitmap oyuncuPlatform;
     int oyuncuPlatformX[], oyuncuPlatformY[], oyuncuPlatformW[], oyuncuPlatformH[];
     int yolSayisi;
+
     //oyuncu gemisi
     Bitmap gemi[][];
     int gemiMaxFrame[], gemiCesitleri;
     int gemiFrame, gemiX, gemiY, gemiHiz;
+
+    //
+    int frameBaslangic[][], frameSon[][], gemiDurumSayisi;
+
     //gemi yüklede başlatılıyor
     Vector<Integer> yeniOyuncuGemi;
     //düşman platformu
@@ -146,6 +155,13 @@ public class GameCanvas extends BaseCanvas {
     Bitmap paraCercevesi;
     int paraCercevesiX, paraCercevesiY;
     Paint paraRengi;
+    int gemiUcretleri[];
+
+    //bayrak
+    Bitmap bayrak[];
+    int bayrakX, bayrakY, bayrakW, bayrakH, bayrakDurumlari[];
+    Rect bayrakKaynak, bayrakHedef[];
+
 
     public GameCanvas(NgApp ngApp) {
         super(ngApp);
@@ -169,7 +185,30 @@ public class GameCanvas extends BaseCanvas {
         patlamaYukle();
         puanYukle();
         paraYukle();
+        bayrakYukle();
         root.oyunMuzikCal(true);
+    }
+
+    private void bayrakYukle() {
+        bayrak = new Bitmap[2];
+        bayrak[0] = loadImage("para_acik.png");
+        bayrak[1] = loadImage("para_kapali.png");
+        bayrakX = 260 - bayrak[0].getWidth();
+        bayrakY = 1650;
+        bayrakW = bayrak[0].getWidth();
+        bayrakH = bayrak[0].getHeight();
+        bayrakKaynak = new Rect(0, 0 , bayrakW, bayrakH);
+        bayrakHedef = new Rect[4];
+        bayrakHedef[SARIGEMI] = new Rect(200, 1640, 260, 1750);
+        bayrakHedef[SIYAHGEMI] = new Rect(465, 1640, 525, 1750);
+        bayrakHedef[YILDIZGEMI] = new Rect(735, 1640, 795, 1750);
+        bayrakHedef[TOPACGEMI] = new Rect(1010, 1640, 1070, 1750);
+
+        bayrakDurumlari = new int[4];
+        bayrakDurumlari[SARIGEMI] = 0;
+        bayrakDurumlari[SIYAHGEMI] = 0;
+        bayrakDurumlari[YILDIZGEMI] = 0;
+        bayrakDurumlari[TOPACGEMI] = 0;
     }
 
     private void paraYukle() {
@@ -199,6 +238,7 @@ public class GameCanvas extends BaseCanvas {
         yeniPatlama.add(gemiH);         //h
 
         patlamaListesi.add(yeniPatlama);
+        root.sesCal(root.SES_PATLAMA);
     }
 
     private void patlamaYukle() {
@@ -311,6 +351,7 @@ public class GameCanvas extends BaseCanvas {
         yeniOyuncuMermi.add(mermiResimleri[0].getHeight());    //h
         yeniOyuncuMermi.add(-20);     //hız
         oMermiListesi.add(yeniOyuncuMermi);
+        root.sesCal(root.SES_ATES);
     }
     private void dMermiUret(int konumX, int konumY) {
         yeniDusmanMermisi = new Vector<Integer>();
@@ -322,6 +363,7 @@ public class GameCanvas extends BaseCanvas {
         yeniDusmanMermisi.add(mermiResimleri[1].getHeight());      //h
         yeniDusmanMermisi.add(20);       //hız
         dMermiListesi.add(yeniDusmanMermisi);
+        root.sesCal(root.SES_ATES);
     }
 
     private void gemiSecimiYukle() {
@@ -382,6 +424,13 @@ public class GameCanvas extends BaseCanvas {
         oyuncuMermiHareketi();
         dusmanMermiHareketi();
         carpismaKontrolleri();
+        bayrakDurumKontrolu();
+    }
+
+    private void bayrakDurumKontrolu() {
+        for (int tur = 0; tur < gemiCesitleri; tur++) {
+            if(para > gemiUcretleri[tur])   bayrakDurumlari[tur] = 0; else bayrakDurumlari[tur] = 1;
+        }
     }
 
     private void carpismaKontrolleri() {
@@ -436,6 +485,7 @@ public class GameCanvas extends BaseCanvas {
                     //düşman gemisi patlayacak
                     oMermiListesi.remove(oMermi);
                     puan += gemiPuanları[dusmanGemiListesi.get(dusman).get(DGEMI_TUR)];
+                    para += gemiUcretleri[dusmanGemiListesi.get(dusman).get(DGEMI_TUR)];
                     dusmanGemiListesi.remove(dusman);
                     break;
                 }
@@ -507,8 +557,15 @@ public class GameCanvas extends BaseCanvas {
                     oyuncuGemiListesi.get(oyuncu).set(OGEMI_SM, 1);
                     break;
                 }
+
+            }
+            if(oyuncuGemiListesi.get(oyuncu).get(OGEMI_SM) != oyuncuGemiListesi.get(oyuncu).get(OGEMI_DURUM)) {
+                oyuncuGemiListesi.get(oyuncu).set(OGEMI_FRAME,
+                        frameBaslangic[oyuncuGemiListesi.get(oyuncu).get(OGEMI_TUR)][oyuncuGemiListesi.get(oyuncu).get(OGEMI_SM)] );
+                oyuncuGemiListesi.get(oyuncu).set(OGEMI_DURUM, oyuncuGemiListesi.get(oyuncu).get(OGEMI_SM));
             }
         }
+
     }
 
     private void dusmanGemiSaldiriKontrol() {
@@ -523,6 +580,11 @@ public class GameCanvas extends BaseCanvas {
                     dusmanGemiListesi.get(dusman).set(DGEMI_SM, 1);
                     break;
                 }
+            }
+            if(dusmanGemiListesi.get(dusman).get(DGEMI_SM) != dusmanGemiListesi.get(dusman).get(DGEMI_DURUM)) {
+                dusmanGemiListesi.get(dusman).set(DGEMI_FRAME,
+                        frameBaslangic[dusmanGemiListesi.get(dusman).get(DGEMI_TUR)][dusmanGemiListesi.get(dusman).get(DGEMI_SM)] );
+                dusmanGemiListesi.get(dusman).set(DGEMI_DURUM, dusmanGemiListesi.get(dusman).get(DGEMI_SM));
             }
         }
     }
@@ -547,10 +609,10 @@ public class GameCanvas extends BaseCanvas {
         dusmanPlatformCiz();
         platformAnimasyonCiz();
         gemiListesiCiz();
-        oyuncuMermiCiz();
-        dusmanMermiCiz();
         oyuncuGemiCiz();
+        oyuncuMermiCiz();
         dusmanGemiCiz();
+        dusmanMermiCiz();
         patlamaCiz();
         arayuzNesneleriCiz();
         pauseMenuCiz();
@@ -612,9 +674,17 @@ public class GameCanvas extends BaseCanvas {
     }
 
     private void arayuzNesneleriCiz() {
+        bayrakCiz();
         ayarButonCiz();
         puanCiz();
         paraCiz();
+    }
+
+    private void bayrakCiz() {
+        for (int bc_i = 0; bc_i < 4; bc_i++) {
+            drawBitmap(bayrak[bayrakDurumlari[bc_i]], bayrakKaynak, bayrakHedef[bc_i]);
+            drawText("" + gemiUcretleri[bc_i] , bayrakHedef[bc_i].left + 30, bayrakHedef[bc_i].top + 50);
+        }
     }
 
     private void paraCiz() {
@@ -646,12 +716,11 @@ public class GameCanvas extends BaseCanvas {
                     .get(DGEMI_FRAME)], dusmanGemiListesi.get(dusman).get(DGEMI_X), dusmanGemiListesi.get(dusman)
                     .get(DGEMI_Y));
             //frame + 1
-            if(dusmanGemiListesi.get(dusman).get(DGEMI_FRAME) < gemiMaxFrame[dusmanGemiListesi
-                    .get(dusman).get(DGEMI_TUR)] - 1) {
+            if(dusmanGemiListesi.get(dusman).get(DGEMI_FRAME) < frameSon[dusmanGemiListesi.get(dusman).get(DGEMI_TUR)][dusmanGemiListesi.get(dusman).get(DGEMI_DURUM)]) {
                 dusmanGemiListesi.get(dusman).set(DGEMI_FRAME, dusmanGemiListesi.get(dusman).get(DGEMI_FRAME) + 1);
 
             } else {
-                dusmanGemiListesi.get(dusman).set(DGEMI_FRAME, 0);
+                dusmanGemiListesi.get(dusman).set(DGEMI_FRAME, frameBaslangic[dusmanGemiListesi.get(dusman).get(DGEMI_TUR)][dusmanGemiListesi.get(dusman).get(DGEMI_DURUM)]);
             }
         }
     }
@@ -698,9 +767,16 @@ public class GameCanvas extends BaseCanvas {
         if(kazananYol > 0) secilenDusmanOyuncuPlatformu = SAGTARAF;
         else if(kazananYol == 0) secilenDusmanOyuncuPlatformu = random.nextInt(dusmanYolSayisi);
         else secilenDusmanOyuncuPlatformu = SOLTARAF;
-
+        int tur = 0;
+        //hangi gemiyi üretecek
+        if(dusmanGemiListesi.size() > 6) {
+            tur = random.nextInt(gemiCesitleri);
+        } else {
+            tur = random.nextInt(gemiCesitleri);
+            if(tur == YILDIZGEMI) tur = random.nextInt(gemiCesitleri);
+        }
         yeniDusmanGemi = new Vector<Integer>();
-        int tur = random.nextInt(gemiCesitleri);
+
         yeniDusmanGemi.add(tur);    //tür
         yeniDusmanGemi.add(0);      //frame
         yeniDusmanGemi.add(dusmanPlatformX[secilenDusmanOyuncuPlatformu] + ((dusmanPlatform.getWidth() - gemi[tur][0].getWidth())/2));    //x
@@ -712,10 +788,12 @@ public class GameCanvas extends BaseCanvas {
         yeniDusmanGemi.add(secilenDusmanOyuncuPlatformu);  //yol
         yeniDusmanGemi.add(30);     //reload
         yeniDusmanGemi.add(1);      //mermi tipi
+        yeniDusmanGemi.add(0);      //durum
+
 
         dusmanGemiListesi.add(yeniDusmanGemi);
         dGemiUretBaslangic = System.currentTimeMillis();
-        //bayrak
+
     }
 
     private void oyuncuPlatformYukle() {
@@ -755,9 +833,11 @@ public class GameCanvas extends BaseCanvas {
         yeniOyuncuGemi.add(secilenOyuncuPlatformu);     //geminin hangi yolda olduğunu gösteriyor
         yeniOyuncuGemi.add(30);                         //mermi reload süresi
         yeniOyuncuGemi.add(0);                          //mermi türü
+        yeniOyuncuGemi.add(0);                          //durum
         //üretilmiş gemi listeye eklendi
         oyuncuGemiListesi.add(yeniOyuncuGemi);
-
+        root.sesCal(root.SES_URET);
+        para -= gemiUcretleri[tur];
 
     }
 
@@ -784,18 +864,84 @@ public class GameCanvas extends BaseCanvas {
     private void gemiYukle() {
         gemiCesitleri = 4;
         gemiMaxFrame = new int[gemiCesitleri];
-        gemiMaxFrame[SARIGEMI] = 25;
-        gemiMaxFrame[SIYAHGEMI] = 16;
-        gemiMaxFrame[YILDIZGEMI] = 25;
-        gemiMaxFrame[TOPACGEMI] = 25;
+        gemiMaxFrame[SARIGEMI] = 25 + 11;
+        gemiMaxFrame[SIYAHGEMI] = 16 + 8;
+        gemiMaxFrame[YILDIZGEMI] = 25 + 11;
+        gemiMaxFrame[TOPACGEMI] = 25 + 25;
+
+        gemiDurumSayisi = 2;
+        frameBaslangic = new int[gemiCesitleri][gemiDurumSayisi];
+        frameSon = new int[gemiCesitleri][gemiDurumSayisi];
+
+        frameBaslangic[SARIGEMI][DURUM_NORMAL] = 0;
+        frameSon[SARIGEMI][DURUM_NORMAL] = 24;
+        frameBaslangic[SARIGEMI][DURUM_ATES] = 25;
+        frameSon[SARIGEMI][DURUM_ATES] = 35;
+
+        frameBaslangic[SIYAHGEMI][DURUM_NORMAL] = 0;
+        frameSon[SIYAHGEMI][DURUM_NORMAL] = 15;
+        frameBaslangic[SIYAHGEMI][DURUM_ATES] = 16;
+        frameSon[SIYAHGEMI][DURUM_ATES] = 23;
+
+        frameBaslangic[YILDIZGEMI][DURUM_NORMAL] = 0;
+        frameSon[YILDIZGEMI][DURUM_NORMAL] = 24;
+        frameBaslangic[YILDIZGEMI][DURUM_ATES] = 25;
+        frameSon[YILDIZGEMI][DURUM_ATES] = 35;
+
+        frameBaslangic[TOPACGEMI][DURUM_NORMAL] = 0;
+        frameSon[TOPACGEMI][DURUM_NORMAL] = 24;
+        frameBaslangic[TOPACGEMI][DURUM_ATES] = 25;
+        frameSon[TOPACGEMI][DURUM_ATES] = 49;
+
+        //gemi ücretleri
+        gemiUcretleri = new int[gemiCesitleri];
+        gemiUcretleri[SARIGEMI] = 25;
+        gemiUcretleri[SIYAHGEMI] = 35;
+        gemiUcretleri[YILDIZGEMI] = 70;
+        gemiUcretleri[TOPACGEMI] = 40;
+
         //gemilerin listesi
         oyuncuGemiListesi = new Vector<Vector<Integer>>();
-        gemi = new Bitmap[gemiCesitleri][25];
-        for(int gemiCesit = 0; gemiCesit != gemiCesitleri; ++gemiCesit) {
-            for(int gemiFrame = 0; gemiFrame != gemiMaxFrame[gemiCesit]; ++gemiFrame) {
-                gemi[gemiCesit][gemiFrame] = loadImage("animasyon/ship_" + (gemiCesit + 1)
-                                                                    + "_" + (gemiFrame + 1) + ".png");
-            }
+        gemi = new Bitmap[gemiCesitleri][50];
+        //döngü oluşturulacak
+        //sarı gemi
+        for (int frame = 0; frame < gemiMaxFrame[SARIGEMI]; frame++) {
+            if(frame == 25) break;
+            gemi[SARIGEMI][frame] = loadImage("animasyon/ship_1_" + (frame + 1) + ".png");
+        }
+
+        for (int frame = 25; frame < gemiMaxFrame[SARIGEMI]; frame++) {
+            gemi[SARIGEMI][frame] = loadImage("animasyon/ship_1_shot_" + ((frame % 25) + 1) + ".png");
+        }
+
+        //siyah gemi
+        for (int frame = 0; frame < gemiMaxFrame[SIYAHGEMI]; frame++) {
+            if(frame == 16) break;
+            gemi[SIYAHGEMI][frame] = loadImage("animasyon/ship_2_" + (frame + 1) + ".png");
+        }
+
+        for (int frame = 16; frame < gemiMaxFrame[SIYAHGEMI]; frame++) {
+            gemi[SIYAHGEMI][frame] = loadImage("animasyon/ship_2_shot_" + ((frame % 16) + 1) + ".png");
+        }
+
+        //yıldız gemi
+        for (int frame = 0; frame < gemiMaxFrame[YILDIZGEMI]; frame++) {
+            if(frame == 25) break;
+            gemi[YILDIZGEMI][frame] = loadImage("animasyon/ship_3_" + (frame + 1) + ".png");
+        }
+
+        for (int frame = 25; frame < gemiMaxFrame[YILDIZGEMI]; frame++) {
+            gemi[YILDIZGEMI][frame] = loadImage("animasyon/ship_3_shot_" + ((frame % 25) + 1) + ".png");
+        }
+
+        //topaç gemi
+        for (int frame = 0; frame < gemiMaxFrame[TOPACGEMI]; frame++) {
+            if(frame == 25) break;
+            gemi[TOPACGEMI][frame] = loadImage("animasyon/ship_4_" + (frame + 1) + ".png");
+        }
+
+        for (int frame = 25; frame < gemiMaxFrame[TOPACGEMI]; frame++) {
+            gemi[TOPACGEMI][frame] = loadImage("animasyon/ship_4_shot_" + ((frame % 25) + 1) + ".png");
         }
 
         gemiFrame = 0;
@@ -842,10 +988,12 @@ public class GameCanvas extends BaseCanvas {
                      , oyuncuGemiListesi.get(sira).get(OGEMI_X), oyuncuGemiListesi.get(sira).get(OGEMI_Y));
            canvas.restore();
            //frame + 1
-           if(oyuncuGemiListesi.get(sira).get(OGEMI_FRAME) < gemiMaxFrame[oyuncuGemiListesi.get(sira).get(OGEMI_TUR)] - 1) {
+           if(oyuncuGemiListesi.get(sira).get(OGEMI_FRAME)
+                   < frameSon[oyuncuGemiListesi.get(sira).get(OGEMI_TUR)][oyuncuGemiListesi.get(sira).get(OGEMI_SM)]) {
                oyuncuGemiListesi.get(sira).set(OGEMI_FRAME, oyuncuGemiListesi.get(sira).get(OGEMI_FRAME) + 1);
            } else {
-               oyuncuGemiListesi.get(sira).set(OGEMI_FRAME, 0);
+               oyuncuGemiListesi.get(sira).set(OGEMI_FRAME,
+                       frameBaslangic[oyuncuGemiListesi.get(sira).get(OGEMI_TUR)][oyuncuGemiListesi.get(sira).get(OGEMI_SM)]);
            }
        }
     }
@@ -924,7 +1072,8 @@ public class GameCanvas extends BaseCanvas {
         for(int gemi = 0; gemi != gemiCesitleri; ++gemi) {
             if(x > gemiSecimiX[gemi] && x < gemiSecimiX[gemi] + gemiSecimiW &&
                y > gemiSecimiY[gemi] && y < gemiSecimiY[gemi] + gemiSecimiH) {
-                oyuncuGemiUret(gemi);
+                if(para >= gemiUcretleri[gemi])
+                    oyuncuGemiUret(gemi);
             }
         }
     }

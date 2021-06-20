@@ -19,6 +19,10 @@ public class OdevCanvas extends BaseCanvas {
     Vector<Integer> gemiW, gemiH, gemiX, gemiY;
     Vector<Integer> gemiBilgi;
 
+    //oyuncu gemi parametreleri
+    int OGEMI_TUR = 0, OGEMI_FRAME = 1, OGEMI_X = 2, OGEMI_Y = 3, OGEMI_W = 4, OGEMI_H = 5,
+            OGEMI_HIZ = 6, OGEMI_SM = 7, OGEMI_YOL = 8, OGEMI_RELOAD = 9, OGEMI_MERMI = 10;
+
     int menuX, menuY, menuW, menuH;
 
     Bitmap balon;
@@ -39,6 +43,9 @@ public class OdevCanvas extends BaseCanvas {
     Vector<Integer> gemi;
     Bitmap gemiResimleri[];
 
+    int frameBaslangic[], frameSon[];
+
+
     public OdevCanvas(NgApp ngApp) {
         super(ngApp);
     }
@@ -54,12 +61,14 @@ public class OdevCanvas extends BaseCanvas {
 
     private void gemi2Yukle() {
         gemi = new Vector<Integer>();
+        gemi.add(0);    //tur
         gemi.add(0);    //frame
         gemi.add(100);    //x
         gemi.add(100);    //y
         gemi.add(0);    //w
         gemi.add(0);    //h
         gemi.add(0);    //hız
+        gemi.add(0);    //sm
 
         gemiResimleri = new Bitmap[36];
         for (int gemi = 0; gemi < 25; gemi++) {
@@ -68,6 +77,13 @@ public class OdevCanvas extends BaseCanvas {
         for(int gemi = 25; gemi < 36; gemi++) {
             gemiResimleri[gemi] = loadImage("animasyon/ship_1_shot_" + ((gemi % 25) + 1) + ".png");
         }
+
+        frameBaslangic = new int[2];
+        frameSon = new int[2];
+        frameBaslangic[0] = 0;
+        frameSon[0] = 24;
+        frameBaslangic[1] = 25;
+        frameSon[1] = 35;
     }
 
     private void solucanYukle() {
@@ -218,8 +234,14 @@ public class OdevCanvas extends BaseCanvas {
     }
 
     private void gemiCiz() {
-        for(int gemi = 0; gemi != gemiListe.size(); ++gemi) {
-            drawBitmap(gemiListe.get(gemi), gemiX.get(gemi), gemiY.get(gemi));
+        drawBitmap(gemiResimleri[gemi.get(0)], gemi.get(1), gemi.get(2));
+        //frame + 1
+        if(gemi.get(0) < frameSon[gemi.get(7)]) {
+            gemi.set(0, gemi.get(0) + 1);
+
+        } else {
+            //mermi üret
+            gemi.set(0, frameBaslangic[gemi.get(7)]);
         }
     }
 
@@ -250,6 +272,8 @@ public class OdevCanvas extends BaseCanvas {
         //odevButtonTikla(x, y);
         zoomIslemi(x, y);
 
+        gemi.set(0, frameBaslangic[1]);
+        gemi.set(7, 1);
     }
 
     private void odevButtonTikla(int x, int y) {
@@ -276,6 +300,7 @@ public class OdevCanvas extends BaseCanvas {
     public void touchUp(int x, int y, int id) {
         //zoomlama bitiş
         solucanKaynak.set(0, 0, solucan.getWidth(), solucan.getHeight());
+
 
     }
 
